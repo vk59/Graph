@@ -3,4 +3,7 @@
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
     <color name="colorAccent">#03DAC5</color>
+    <color name="graph">#3E7EFF</color>
+    <color name="grid">#A8A9B3</color>
+    <color name="text">#000000</color>
 </resources>
