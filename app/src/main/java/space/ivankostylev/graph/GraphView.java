@@ -1,6 +1,5 @@
 package space.ivankostylev.graph;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,8 +9,6 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-
-import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -145,7 +142,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         paintText.setColor(getResources().getColor(R.color.text));
                         paintText.setStrokeWidth(1f);
                         paintText.setAntiAlias(true);
-                        paintText.setTextSize(30);
+                        paintText.setTextSize(15);
 
                         float cStepTextX = (areaX[1] - areaX[0]) / 5;
                         float cStepTextY = (areaY[1] - areaY[0]) / 5;
@@ -154,13 +151,13 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         for (int i = countOfDivisions - 1; i > 0; i--) {
                             // X Axis
                             float valueX = (countOfDivisions - i) * cStepTextX + areaX[0];
-                            canvas.drawText(Float.toString(valueX),
+                            canvas.drawText(Float.toString(roundFloat(valueX, 1)),
                                     (countOfDivisions - i) * stepGridX, screenHeight,
                                     paintText);
 
                             // Y Axis
                             float valueY = (countOfDivisions - i) * cStepTextY + areaY[0];
-                            canvas.drawText(Float.toString(valueY),
+                            canvas.drawText(Float.toString(roundFloat(valueY, 1)),
                                     0, i * stepGridY,
                                     paintText);
                         }
@@ -173,6 +170,14 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         }
         private float normalY(float y){
             return getHeight() - y;
+        }
+
+        private float roundFloat(float a, int decimalPlaces){
+            float b = 1;
+            for (int i = 0; i<decimalPlaces; i++) { b *= 10; }
+            int preRes = (int) Math.round(a * b);
+            float result = ((float) preRes) / b;
+            return result;
         }
 
         private float[][] getMinMaxValues(){
