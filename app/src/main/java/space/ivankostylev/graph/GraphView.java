@@ -69,11 +69,12 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         }
 
         private void setData() {
-            int x0 = 0;
-            for (int x = x0; x <= 47; x ++){
-                entries.add(new Entry(x, (float) (Math.sqrt(x)) ) );
+            int x0 = -100;
+            for (int x = x0; x <= 100; x ++){
+                float v = (float) (x) / 10;
+                entries.add(new Entry((float) v, (float) v * v) );
             }
-            entries.add(new Entry(2, (float) 5));
+//            entries.add(new Entry(2, (float) 5));
         }
 
         @Override
@@ -90,8 +91,14 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         paintGrid.setStrokeWidth(1f);
                         paintGrid.setAntiAlias(true);
 
-                        float screenWidth = canvas.getWidth();
-                        float screenHeight = canvas.getHeight();
+
+
+                        float padding = (float) 0.01 * (canvas.getWidth() + canvas.getHeight());
+                        float paddingY = padding * 1.5F;
+
+                        float screenWidth = canvas.getWidth() - 2 * padding;
+                        float screenHeight = canvas.getHeight() - 2 * padding - paddingY;
+
 
                         Log.d("SIZE", screenWidth + " " + screenHeight);
 
@@ -100,12 +107,12 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         float stepGridX = screenWidth / countOfDivisions;
                         float stepGridY = screenHeight / countOfDivisions;
 
-                        for (int i = countOfDivisions; i > 0; i--) {
-                            canvas.drawLine(0, i*stepGridY, screenWidth,
-                                    i*stepGridY, paintGrid);
-                            canvas.drawLine((countOfDivisions - i)*stepGridX, 0,
-                                    (countOfDivisions - i)*stepGridX,
-                                    screenHeight, paintGrid);
+                        for (int i = countOfDivisions; i >= 0; i--) {
+                            canvas.drawLine(padding, i*stepGridY + padding, padding + screenWidth,
+                                    padding + i*stepGridY, paintGrid);
+                            canvas.drawLine(padding + (countOfDivisions - i)*stepGridX,
+                                    padding, padding + (countOfDivisions - i)*stepGridX,
+                                    padding + screenHeight, paintGrid);
                         }
 
                         // Graph
@@ -125,12 +132,14 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         paintGraph.setStrokeWidth(3);
                         paintGraph.setAntiAlias(true);
 
-                        float startX = (entries.get(0).getX() - areaX[0]) * stepX;
-                        float startY = normalY((entries.get(0).getY() - areaY[0]) * stepY);
+                        float startX = (entries.get(0).getX() - areaX[0]) * stepX + padding;
+                        float startY = normalY((entries.get(0).getY() - areaY[0]) * stepY)
+                                - padding - paddingY;
 
                         for (int i = 1; i < entries.size(); i++) {
-                            float stopX = (entries.get(i).getX() - areaX[0]) * stepX;
-                            float stopY = normalY((entries.get(i).getY() - areaY[0]) * stepY);
+                            float stopX = (entries.get(i).getX() - areaX[0]) * stepX + padding;
+                            float stopY = normalY((entries.get(i).getY() - areaY[0]) * stepY)
+                                    - padding - paddingY;
                             Log.d("LINE", "(" + startX + ";" + startY + ")");
                             canvas.drawLine(startX, startY, stopX, stopY, paintGraph);
                             startX = stopX;
@@ -138,28 +147,39 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         }
 
                         // Text
-                        Paint paintText = new Paint();
-                        paintText.setColor(getResources().getColor(R.color.text));
-                        paintText.setStrokeWidth(1f);
-                        paintText.setAntiAlias(true);
-                        paintText.setTextSize(15);
+                        int textSize = (int) (paddingY);
+                        Paint paintTextHorizontal = new Paint();
+                        paintTextHorizontal.setColor(getResources().getColor(R.color.text));
+                        paintTextHorizontal.setStrokeWidth(1f);
+                        paintTextHorizontal.setAntiAlias(true);
+                        paintTextHorizontal.setTextAlign(Paint.Align.CENTER);
+                        paintTextHorizontal.setTextSize(textSize);
+
+                        Paint paintTextVertical = new Paint();
+                        paintTextVertical.setColor(getResources().getColor(R.color.text));
+                        paintTextVertical.setStrokeWidth(1f);
+                        paintTextVertical.setAntiAlias(true);
+                        paintTextVertical.setTextSize(textSize);
 
                         float cStepTextX = (areaX[1] - areaX[0]) / 5;
                         float cStepTextY = (areaY[1] - areaY[0]) / 5;
 
-
                         for (int i = countOfDivisions - 1; i > 0; i--) {
                             // X Axis
                             float valueX = (countOfDivisions - i) * cStepTextX + areaX[0];
-                            canvas.drawText(Float.toString(roundFloat(valueX, 1)),
-                                    (countOfDivisions - i) * stepGridX, screenHeight,
-                                    paintText);
+                            canvas.drawText(
+                                    Float.toString(roundFloat(valueX, getDecimal(cStepTextX))),
+                                    (countOfDivisions - i) * stepGridX + padding,
+                                    screenHeight + padding + paddingY,
+                                    paintTextHorizontal);
 
                             // Y Axis
                             float valueY = (countOfDivisions - i) * cStepTextY + areaY[0];
-                            canvas.drawText(Float.toString(roundFloat(valueY, 1)),
-                                    0, i * stepGridY,
-                                    paintText);
+                            canvas.drawText(
+                                    Float.toString(roundFloat(valueY, getDecimal(cStepTextY))),
+                                    0 + padding,
+                                    i * stepGridY + padding - 5,
+                                    paintTextVertical);
                         }
 
                     } finally {
@@ -180,6 +200,16 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
             return result;
         }
 
+        private int getDecimal(float interval){
+            if ((int) (interval) / 10 >= 10) { return 0; }
+            int countOfNum = 0;
+            while(interval < 1) {
+                interval *= 10;
+                countOfNum ++;
+            }
+            return countOfNum + 1;
+        }
+
         private float[][] getMinMaxValues(){
             float minX = entries.get(0).getX();
             float maxX = entries.get(0).getX();
@@ -189,7 +219,6 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
             for (Entry entry : entries){
                 float currentX = entry.getX();
                 float currentY = entry.getY();
-                Log.d("DATA", currentX + ";" + currentY);
                 if (currentX > maxX) maxX = currentX;
                 if (currentX < minX) minX = currentX;
                 if (currentY > maxY) maxY = currentY;
