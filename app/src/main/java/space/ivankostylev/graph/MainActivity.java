@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setData() {
+        graphView.setAxisName("time, sec", "current, A");
         ArrayList<MomentTest> moments = CurrentTest.getTestsFromFiles(this, 0);
         for (int i = 0; i < 30; i ++) {
             Log.d("MAIN ADDED:", moments.get(i).getVoltage() + " " + moments.get(i).getAmperage());

@@ -18,6 +18,8 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
 
     private volatile boolean running = true; //флаг для остановки потока
     private volatile int firstNewAddedIndex = 0;
+    private volatile String xName = "";
+    private volatile String yName = "";
 
     private volatile ArrayList<Entry> entries = new ArrayList<>();
 
@@ -70,6 +72,11 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         if (entries.size() > 0) {
             redrawGraph();
         }
+    }
+
+    public void setAxisName(String xName, String yName) {
+        this.xName = xName;
+        this.yName = yName;
     }
 
     public void redrawGraph() {
@@ -125,8 +132,8 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                             paintGrid.setStrokeWidth(1f);
                             paintGrid.setAntiAlias(true);
 
-                            float padding = (float) 0.01 * (canvas.getWidth() + canvas.getHeight());
-                            float paddingY = padding * 1.5F;
+                            float padding = (float) 0.025 * (canvas.getWidth() + canvas.getHeight());
+                            float paddingY = padding * 0.5f;
 
                             float screenWidth = canvas.getWidth() - 2 * padding;
                             float screenHeight = canvas.getHeight() - 2 * padding - paddingY;
@@ -177,7 +184,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                             }
 
                             // Text
-                            int textSize = (int) (paddingY);
+                            int textSize = (int) (padding * 0.5);
                             Paint paintTextHorizontal = new Paint();
                             paintTextHorizontal.setColor(getResources().getColor(R.color.text));
                             paintTextHorizontal.setStrokeWidth(1f);
@@ -208,10 +215,44 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                                 canvas.drawText(
                                         Float.toString(roundFloat(valueY, getDecimal(cStepTextY))),
                                         0 + padding,
-                                        i * stepGridY + padding - 5,
+                                        i * stepGridY + padding,
                                         paintTextVertical);
                                 firstNewAddedIndex = entries.size();
                             }
+
+                            // names of Axis
+                            int nameAxisSize = (int) ((int) padding * 0.7f);
+                            // X
+                            Paint paintAxisX = new Paint();
+                            paintAxisX.setColor(getResources().getColor(R.color.text));
+                            paintAxisX.setStrokeWidth(1f);
+                            paintAxisX.setAntiAlias(true);
+                            paintAxisX.setTextAlign(Paint.Align.CENTER);
+                            paintAxisX.setTextSize(nameAxisSize);
+
+                            canvas.drawText(xName,
+                                    padding + screenWidth / 2,
+                                    screenHeight + 2 * padding + paddingY * 0.5f,
+                                    paintAxisX);
+
+                            // Y
+                            Paint paintAxisY = new Paint();
+                            paintAxisY.setColor(getResources().getColor(R.color.text));
+                            paintAxisY.setStrokeWidth(1f);
+                            paintAxisY.setAntiAlias(true);
+                            paintAxisY.setTextAlign(Paint.Align.CENTER);
+                            paintAxisY.setTextSize(nameAxisSize);
+
+                            float rotate_center_x = padding * 0.5f;
+                            float rotate_center_y = screenHeight/2 + padding;
+                            float degrees = -90;
+
+                            canvas.rotate(degrees, rotate_center_x, rotate_center_y);
+                            canvas.drawText(yName,
+                                    padding * 0.5f,
+                                    screenHeight / 2 + padding,
+                                    paintAxisY);
+                            canvas.rotate(-degrees, rotate_center_x, rotate_center_y);
                         }
                         // if entries.size == 0 or null
                         else {
