@@ -1,10 +1,10 @@
 package space.ivankostylev.graph;
 
-public class Entry {
+public class Moment {
     private float x;
     private float y;
 
-    public Entry(float x, float y) {
+    public Moment(float x, float y) {
         this.x = x;
         this.y = y;
     }

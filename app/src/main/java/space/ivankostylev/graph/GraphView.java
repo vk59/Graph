@@ -11,22 +11,28 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
     public DrawThread drawThread;
 
     private volatile boolean running = true; //флаг для остановки потока
+    private volatile boolean isGraphToDraw = false;
+    private volatile boolean isInitialized = false;
     private volatile int firstNewAddedIndex = 0;
     private volatile String xName = "";
     private volatile String yName = "";
 
-    private volatile ArrayList<Entry> entries = new ArrayList<>();
+    private volatile ArrayList<ArrayList<Moment>> entries = new ArrayList<>();
+    private volatile ArrayList<Integer> colors = new ArrayList<>();
+    private volatile ArrayList<String> labels = new ArrayList<>();
+    private volatile int pointsAll = 0;
 
     private volatile float minX;
     private volatile float maxX;
     private volatile float minY;
     private volatile float maxY;
+
+    private volatile int drewGraphs = 0;
 
     public GraphView(Context context) {
         super(context);
@@ -41,7 +47,14 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         // создание SurfaceView
-        redrawGraph();
+        Log.d("SURFACE", "created");
+        drawThread = new DrawThread(getContext(), getHolder());
+        setRunning(true);
+        drawThread.start();
+        isInitialized = true;
+//        if (isGraphToDraw) {
+//            drawGraph();
+//        }
     }
 
     @Override
@@ -49,45 +62,53 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         // изменение размеров SurfaceView
     }
 
-    public void addInitialData(float x, float y) {
-        Log.d("ADDED DATA", x + " " + y);
-        entries.add(new Entry(x, y));
-        if (entries.size() == 1) {
-            minX = entries.get(0).getX();
-            maxX = entries.get(0).getX();
-            minY = entries.get(0).getY();
-            maxY = entries.get(0).getY();
+    public void addGraphData(GraphData data) {
+        entries.add(data.getData());
+        colors.add(data.getColor());
+        labels.add(data.getLabel());
+        if (!isInitialized) {
+            minX = entries.get(0).get(0).getX();
+            maxX = entries.get(0).get(0).getX();
+            minY = entries.get(0).get(0).getY();
+            maxY = entries.get(0).get(0).getY();
         }
     }
 
-    public void addData(float x, float y) {
-        Log.d("ADDED DATA", x + " " + y);
-        entries.add(new Entry(x, y));
-        if (entries.size() == 1) {
-            minX = entries.get(0).getX();
-            maxX = entries.get(0).getX();
-            minY = entries.get(0).getY();
-            maxY = entries.get(0).getY();
-        }
-        if (entries.size() > 0) {
-            redrawGraph();
-        }
+    public void removeGraphData(long index) {
+        //
     }
+
+    public long getQuantityOfGraphData() {
+        return entries.size();
+    }
+
+
+//    public void addData(float x, float y) {
+//        Log.d("ADDED DATA", x + " " + y);
+//        entries.add(new Moment(x, y));
+//        if (entries.size() == 1) {
+//            minX = entries.get(0).getX();
+//            maxX = entries.get(0).getX();
+//            minY = entries.get(0).getY();
+//            maxY = entries.get(0).getY();
+//        }
+//    }
 
     public void setAxisName(String xName, String yName) {
         this.xName = xName;
         this.yName = yName;
     }
 
-    public void redrawGraph() {
-        setRunning(true);
-//        if (drawThread != null && drawThread.isAlive()){
-//            drawThread.start();
-//        }
-//        else {
+    public void drawGraph() {
+        isGraphToDraw = true;
+        if (isInitialized) {
+            Log.d("GRAPH VIEW", "draw");
+            setRunning(true);
             drawThread = new DrawThread(getContext(), getHolder());
             drawThread.start();
-//        }
+            pointsAll += entries.get(drewGraphs).size();
+            drewGraphs++;
+        }
     }
 
     public void setRunning(boolean run) {
@@ -97,7 +118,6 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         // уничтожение SurfaceView
-        setRunning(false);
         boolean retry = true;
         while (retry) {
             try {
@@ -125,7 +145,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                     try {
                         canvas.drawColor(Color.WHITE);
 
-                        if (entries.size() > 0 && entries != null) {
+                        if (entries != null && entries.size() > 0 && isGraphToDraw) {
 
                             Paint paintGrid = new Paint();
                             paintGrid.setColor(getResources().getColor(R.color.grid));
@@ -165,17 +185,18 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                             Log.d("STEPS", "(" + stepX + ";" + stepY + ")");
 
                             Paint paintGraph = new Paint();
-                            paintGraph.setColor(getResources().getColor(R.color.graph));
+                            paintGraph.setColor(colors.get(drewGraphs));
                             paintGraph.setStrokeWidth(3);
                             paintGraph.setAntiAlias(true);
 
-                            float startX = (entries.get(0).getX() - minX) * stepX + padding;
-                            float startY = normalY((entries.get(0).getY() - minY) * stepY)
+                            int k = drewGraphs;
+                            float startX = (entries.get(k).get(0).getX() - minX) * stepX + padding;
+                            float startY = normalY((entries.get(k).get(0).getY()  - minY) * stepY)
                                     - padding - paddingY;
 
-                            for (int i = 1; i < entries.size(); i++) {
-                                float stopX = (entries.get(i).getX() - minX) * stepX + padding;
-                                float stopY = normalY((entries.get(i).getY() - minY) * stepY)
+                            for (int i = 1; i < entries.get(k).size(); i++) {
+                                float stopX = (entries.get(k).get(i).getX() - minX) * stepX + padding;
+                                float stopY = normalY((entries.get(k).get(i).getY() - minY) * stepY)
                                         - padding - paddingY;
                                 Log.d("LINE", "(" + startX + ";" + startY + ")");
                                 canvas.drawLine(startX, startY, stopX, stopY, paintGraph);
@@ -217,7 +238,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                                         0 + padding,
                                         i * stepGridY + padding,
                                         paintTextVertical);
-                                firstNewAddedIndex = entries.size();
+                                firstNewAddedIndex = entries.get(k).size();
                             }
 
                             // names of Axis
@@ -253,12 +274,16 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                                     screenHeight / 2 + padding,
                                     paintAxisY);
                             canvas.rotate(-degrees, rotate_center_x, rotate_center_y);
+                            running = false;
                         }
                         // if entries.size == 0 or null
                         else {
                             Paint p = new Paint();
-                            p.setTextSize(30f);
-                            canvas.drawText("There is no data", 0, 0, p);
+                            p.setTextSize(getWidth()*0.1f);
+                            p.setColor(Color.BLACK);
+                            p.setTextAlign(Paint.Align.CENTER);
+                            canvas.drawText("There is no data", getWidth() / 2, getHeight() / 2, p);
+                            running = false;
                         }
 
                     } finally {
@@ -291,9 +316,9 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         }
 
         private void getMinMaxValues(){
-            for (int i = firstNewAddedIndex; i < entries.size(); i++) {
-                float currentX = entries.get(i).getX();
-                float currentY = entries.get(i).getY();
+            for (int i = 0; i < entries.get(drewGraphs).size(); i++) {
+                float currentX = entries.get(drewGraphs).get(i).getX();
+                float currentY = entries.get(drewGraphs).get(i).getY();
 
                 if (currentX > maxX) maxX = currentX;
                 if (currentX < minX) minX = currentX;
