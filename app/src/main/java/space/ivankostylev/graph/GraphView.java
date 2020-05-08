@@ -85,7 +85,16 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
     public void removeGraphData(int index) {
         moments.remove(index);
         allGraphData.remove(index);
+        colors.remove(index);
+        labels.remove(index);
         isRemoved = true;
+    }
+
+    public void removeAllGraphData(int index) {
+        allGraphData.removeAll(allGraphData);
+        moments.removeAll(moments);
+        colors.removeAll(colors);
+        labels.removeAll(labels);
     }
 
     public long getCountGraphs() {
