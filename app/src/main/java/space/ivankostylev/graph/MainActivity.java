@@ -21,17 +21,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Button stopButton = findViewById(R.id.stopButton);
+        final Button stopButton = findViewById(R.id.stopButton);
         graphView = findViewById(R.id.graph);
         Log.d("GRAPH VIEW", "found");
         setData();
-
         graphView.drawGraph();
+
         stopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 setData2();
                 graphView.drawGraph();
+                final int index = 0;
+                stopButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        try {
+                            graphView.removeGraphData(index);
+                            graphView.drawGraph();
+                        } catch (Exception e) { }
+                    }
+                });
             }
         });
     }
@@ -47,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 31; i < moments.size(); i ++) {
             Log.d("MAIN ADDED:", moments.get(i).getVoltage() + " " + moments.get(i).getAmperage());
             moments1.add(new Moment(moments.get(i).getVoltage(), moments.get(i).getAmperage()));
-            graphView.addGraphData(new GraphData(moments1, getResources().getColor(R.color.grid2), " "));
         }
+        graphView.addGraphData(new GraphData(moments1, getResources().getColor(R.color.graph2), " "));
     }
 
     private void setData() {
