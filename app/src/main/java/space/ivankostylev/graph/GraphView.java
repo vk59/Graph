@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -34,6 +35,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
     private volatile float maxY;
 
     private volatile int drewGraphs = 0;
+    private boolean isLegendEnable = true;
 
     public GraphView(Context context) {
         super(context);
@@ -106,6 +108,10 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         this.yName = yName;
     }
 
+    public void setLegendEnable(boolean isEnable) {
+        this.isLegendEnable = isEnable;
+    }
+
     public void drawGraph() {
         isGraphToDraw = true;
         if (isInitialized) {
@@ -122,7 +128,6 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        // уничтожение SurfaceView
         boolean retry = true;
         while (retry) {
             try {
@@ -142,6 +147,8 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         private float screenHeight;
         private float padding;
         private float paddingY;
+        private float paddingLegend;
+        private float paddingBottom;
 
         private int countOfDivisions;
 
@@ -161,16 +168,21 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                     try {
                         canvas.drawColor(Color.WHITE);
                         if (moments != null && moments.size() > 0 && isGraphToDraw) {
-                            if (isRemoved) {
-                                getMinMaxValues();
-                            }
+//                            if (isRemoved) {
+//
+//                            }
+                            getMinMaxValues();
                             Log.d("X", "minX = " + minX + " :: " + "maxX = " + maxX);
                             Log.d("Y", "minY = " + minY + " :: " + "maxY = " + maxY);
+
                             setScreenSettings();
                             drawGrid();
                             drawText();
                             drawNamesOfAxis();
                             drawGraphs();
+                            if (isLegendEnable) {
+                                drawLegend();
+                            }
                             running = false;
                         }
                         else {
@@ -185,16 +197,51 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
             }
         }
 
+        private void drawLegend() {
+            float paddingForLabel = paddingLegend / moments.size();
+            float sideOfSquare = 0.9f * paddingForLabel;
+            float textSize = 0.9f * paddingForLabel;
+            for (int i = 0; i < moments.size(); i++) {
+                Paint legendRectanglePaint = new Paint();
+                legendRectanglePaint.setColor(colors.get(i));
+                int bottom = (int) (screenHeight + paddingY + padding + paddingForLabel * (i + 1));
+                int left = (int) (padding * 1.5);
+                int top = (int) (bottom - sideOfSquare);
+                int right = (int) (left + sideOfSquare);
+                Rect square = new Rect(left, top, right, bottom);
+                canvas.drawRect(square, legendRectanglePaint);
+
+                Paint legendTextPaint = new Paint();
+                legendTextPaint.setTextSize(textSize);
+                legendTextPaint.setColor(getResources().getColor(R.color.text));
+                int startOfTextX = (int) (right + sideOfSquare * 0.5f);
+                int startOfTextY = (int) (bottom);
+                canvas.drawText(labels.get(i), startOfTextX, startOfTextY, legendTextPaint);
+            }
+        }
+
         private void setScreenSettings() {
             padding = (float) 0.025 * (canvas.getWidth() + canvas.getHeight());
             paddingY = padding * 0.5f;
+            paddingLegend = 0;
 
+            if (isLegendEnable) {
+                paddingLegend += moments.size() * 0.5f * padding;
+            }
+
+            paddingBottom = padding * 0.5f;
             screenWidth = canvas.getWidth() - 2 * padding;
-            screenHeight = canvas.getHeight() - 2 * padding - paddingY;
+            screenHeight = canvas.getHeight() - padding - paddingY - max(paddingLegend, padding) - paddingBottom;
 
             countOfDivisions = 5;
         }
 
+        private float max(float a, float b) {
+            if (a > b) return a;
+            return b;
+        }
+
+        // DRAWING
         private void drawGraphs() {
             // GRAPH DRAWING
             // GRAPH parameters
@@ -209,10 +256,6 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
             paintGraph.setAntiAlias(true);
 
             int points = getMaximumOfSizes();
-//                            ArrayList<ArrayList<Moment>> graphsToDraw =
-//                                    (ArrayList<ArrayList<Moment>>) moments.clone();
-//                            ArrayList<Integer> toRemove = new ArrayList<>();
-            Log.d("PONTS", "points = " + points + " graph.size =" + moments.get(0).size());
             for (int thisPoint = 0; thisPoint < points - 1; thisPoint++) {
                 for (ArrayList<Moment> graph : moments) {
                     if (graph.size() > thisPoint + 1) {
@@ -222,13 +265,12 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                         int graphNum = moments.indexOf(graph);
                         paintGraph.setColor(colors.get(graphNum));
 
-//                                int k = drewGraphs;
                         float startX = (moment.getX() - minX) * stepX + padding;
                         float startY = normalY((moment.getY() - minY) * stepY)
-                                - padding - paddingY;
+                                - max(padding, paddingLegend) - paddingY - paddingBottom;
                         float stopX = (nextMoment.getX() - minX) * stepX + padding;
                         float stopY = normalY((nextMoment.getY() - minY) * stepY)
-                                - padding - paddingY;
+                                - max(padding, paddingLegend) - paddingY - paddingBottom;
                         Log.d("GRAPH #", "#" + graphNum + "# " + startX + " :: " + stopY);
 
                         canvas.drawLine(startX, startY, stopX, stopY, paintGraph);
@@ -237,7 +279,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         }
     }
 
-        // DRAWING
+
         private void drawGrid() {
 
             // Grid
@@ -300,27 +342,21 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
         private void drawNamesOfAxis() {
             // names of Axis
             int nameAxisSize = (int) ((int) padding * 0.7f);
-            // X
-            Paint paintAxisX = new Paint();
-            paintAxisX.setColor(getResources().getColor(R.color.text));
-            paintAxisX.setStrokeWidth(1f);
-            paintAxisX.setAntiAlias(true);
-            paintAxisX.setTextAlign(Paint.Align.CENTER);
-            paintAxisX.setTextSize(nameAxisSize);
 
+            Paint paintAxis = new Paint();
+            paintAxis.setColor(getResources().getColor(R.color.text));
+            paintAxis.setStrokeWidth(1f);
+            paintAxis.setAntiAlias(true);
+            paintAxis.setTextAlign(Paint.Align.CENTER);
+            paintAxis.setTextSize(nameAxisSize);
+
+            // X
             canvas.drawText(xName,
                     padding + screenWidth / 2,
                     screenHeight + 2 * padding + paddingY * 0.5f,
-                    paintAxisX);
+                    paintAxis);
 
             // Y
-            Paint paintAxisY = new Paint();
-            paintAxisY.setColor(getResources().getColor(R.color.text));
-            paintAxisY.setStrokeWidth(1f);
-            paintAxisY.setAntiAlias(true);
-            paintAxisY.setTextAlign(Paint.Align.CENTER);
-            paintAxisY.setTextSize(nameAxisSize);
-
             float rotate_center_x = padding * 0.5f;
             float rotate_center_y = screenHeight / 2 + padding;
             float degrees = -90;
@@ -329,7 +365,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
             canvas.drawText(yName,
                     padding * 0.5f,
                     screenHeight / 2 + padding,
-                    paintAxisY);
+                    paintAxis);
             canvas.rotate(-degrees, rotate_center_x, rotate_center_y);
         }
 
@@ -384,6 +420,7 @@ public class GraphView extends SurfaceView implements SurfaceHolder.Callback{
                 if (graph.getMaxY()  > maxY) maxY = graph.getMaxY();
                 if (graph.getMinY()  < minY) minY = graph.getMinY();
             }
+            isRemoved = false;
         }
     }
 
