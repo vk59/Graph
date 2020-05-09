@@ -7,7 +7,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical">
 
-    <space.ivankostylev.graph.GraphView
+    <com.vk59.graphviewlibrary.GraphView
         android:id="@+id/graph"
         android:layout_width="0dp"
         android:layout_height="400dp"

@@ -8,6 +8,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+import com.vk59.graphviewlibrary.GraphData;
+import com.vk59.graphviewlibrary.GraphView;
+import com.vk59.graphviewlibrary.Moment;
+
 import java.util.ArrayList;
 
 import space.ivankostylev.graph.test.CurrentTest;
